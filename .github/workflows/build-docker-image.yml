@@ -2,7 +2,7 @@ name: Build Docker Image and Push to GCR
 
 on:
   push:
-    branches: [ nikita-build-docker ]
+    branches: [nikita-build-docker]
   workflow_dispatch:
 
 env:
