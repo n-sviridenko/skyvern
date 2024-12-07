@@ -1,8 +1,9 @@
 name: Build Docker Image and Push to GCR
 
 on:
-  release:
+  push:
     branches: [ nikita-build-docker ]
+  workflow_dispatch:
 
 env:
   GCP_PROJECT_ID: nikita-ai
