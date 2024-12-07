@@ -45,7 +45,6 @@ jobs:
           push: true
           tags: |
             gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-            gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.event.release.tag_name }}
             gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:latest
 
       # - name: Build, tag, and push ui image to GCR
