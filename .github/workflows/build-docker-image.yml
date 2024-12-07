@@ -2,7 +2,7 @@ name: Build Docker Image and Push to ECR
 
 on:
   release:
-    types: [published]
+    types: [ published ]
 
 env:
   AWS_REGION: us-east-1
