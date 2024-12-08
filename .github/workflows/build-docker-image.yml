@@ -1,14 +1,15 @@
-name: Build Docker Image and Push to ECR
+name: Build Docker Image and Push to GCR
 
 on:
-  release:
-    types: [ published ]
+  push:
+    branches: [nikita-build-docker]
+  workflow_dispatch:
 
 env:
-  AWS_REGION: us-east-1
-  ECR_BACKEND_REPOSITORY: skyvern
-  ECR_UI_REPOSITORY: skyvern-ui
-  REGISTRY_ALIAS: skyvern # t6d4b5t4 
+  GCP_PROJECT_ID: nikita-ai
+  GCP_REGION: europe-west3
+  BACKEND_IMAGE: skyvern
+  # UI_IMAGE: skyvern-ui
 
 jobs:
   run-ci:
@@ -20,28 +21,28 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
-      
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
       
-      - name: Login to Amazon ECR Public
-        id: login-ecr-public
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
         with:
-          registry-type: public
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configure Docker for GCP
+        run: |
+          gcloud auth configure-docker gcr.io --quiet
           
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       
-      - name: Build, tag, and push backend image to Amazon Public ECR
+      - name: Build, tag, and push backend image to GCR
         id: build-image
         uses: docker/build-push-action@v2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
         with:
           context: .
           platforms: |
@@ -49,23 +50,20 @@ jobs:
             linux/arm64
           push: true
           tags: |
-            ${{ env.ECR_REGISTRY}}/${{ env.REGISTRY_ALIAS }}/${{ env.ECR_BACKEND_REPOSITORY }}:${{ github.sha }}
-            ${{ env.ECR_REGISTRY}}/${{ env.REGISTRY_ALIAS }}/${{ env.ECR_BACKEND_REPOSITORY }}:${{ github.event.release.tag_name }}
-            ${{ env.ECR_REGISTRY}}/${{ env.REGISTRY_ALIAS }}/${{ env.ECR_BACKEND_REPOSITORY }}:latest
+            gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:latest
 
-      - name: Build, tag, and push ui image to Amazon Public ECR
-        id: build-ui-image
-        uses: docker/build-push-action@v2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
-        with:
-          context: .
-          file: Dockerfile.ui
-          platforms: |
-            linux/amd64
-            linux/arm64
-          push: true
-          tags: |
-            ${{ env.ECR_REGISTRY}}/${{ env.REGISTRY_ALIAS }}/${{ env.ECR_UI_REPOSITORY }}:${{ github.sha }}
-            ${{ env.ECR_REGISTRY}}/${{ env.REGISTRY_ALIAS }}/${{ env.ECR_UI_REPOSITORY }}:${{ github.event.release.tag_name }}
-            ${{ env.ECR_REGISTRY}}/${{ env.REGISTRY_ALIAS }}/${{ env.ECR_UI_REPOSITORY }}:latest
+      # - name: Build, tag, and push ui image to GCR
+      #   id: build-ui-image
+      #   uses: docker/build-push-action@v2
+      #   with:
+      #     context: .
+      #     file: Dockerfile.ui
+      #     platforms: |
+      #       linux/amd64
+      #       linux/arm64
+      #     push: true
+      #     tags: |
+      #       gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.UI_IMAGE }}:${{ github.sha }}
+      #       gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.UI_IMAGE }}:${{ github.event.release.tag_name }}
+      #       gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.UI_IMAGE }}:latest
