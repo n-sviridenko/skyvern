@@ -74,7 +74,7 @@ class LLMAPIHandlerFactory:
             redis_password=llm_config.redis_password,
             routing_strategy=llm_config.routing_strategy,
             fallbacks=(
-                [{llm_config.main_model_group: [llm_config.fallback_model_group]}]
+                [{llm_config.main_model_group: llm_config.fallback_model_group}]
                 if llm_config.fallback_model_group
                 else []
             ),

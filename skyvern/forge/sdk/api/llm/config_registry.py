@@ -6,7 +6,8 @@ from skyvern.forge.sdk.api.llm.exceptions import (
     InvalidLLMConfigError,
     MissingLLMProviderEnvVarsError,
 )
-from skyvern.forge.sdk.api.llm.models import LiteLLMParams, LLMConfig, LLMRouterConfig
+from skyvern.forge.sdk.settings_manager import SettingsManager
+from skyvern.forge.sdk.api.llm.models import LiteLLMParams, LLMConfig, LLMRouterConfig, LLMRouterModelConfig
 
 LOG = structlog.get_logger()
 
@@ -222,13 +223,51 @@ if settings.ENABLE_ANTHROPIC:
     )
     LLMConfigRegistry.register_config(
         "ANTHROPIC_CLAUDE3.5_SONNET",
-        LLMConfig(
-            "anthropic/claude-3-5-sonnet-latest",
-            ["ANTHROPIC_API_KEY"],
+        # LLMConfig(
+        #     "anthropic/claude-3-5-sonnet-latest",
+        #     ["ANTHROPIC_API_KEY"],
+        #     supports_vision=True,
+        #     add_assistant_prefix=True,
+        #     max_completion_tokens=8192,
+        # ),
+        LLMRouterConfig(
+            model_name="anthropic/claude-3-5-sonnet-latest",
+            required_env_vars=["ANTHROPIC_API_KEY"],
             supports_vision=True,
             add_assistant_prefix=True,
+            model_list=[
+                LLMRouterModelConfig(
+                    model_name="anthropic/claude-sonnet-4-20250514",
+                    litellm_params={"model": "anthropic/claude-sonnet-4-20250514", "api_key": SettingsManager.get_settings().ANTHROPIC_API_KEY},
+                    rpm=500, # tier 3: can up to 2000
+                    tpm=80000, # tier 3: can up to 80,000 input + 32,000 output
+                ),
+                LLMRouterModelConfig(
+                    model_name="anthropic/claude-3-7-sonnet-latest",
+                    litellm_params={"model": "anthropic/claude-3-7-sonnet-latest", "api_key": SettingsManager.get_settings().ANTHROPIC_API_KEY},
+                    rpm=500, # tier 3: can up to 2000
+                    tpm=80000, # tier 3: can up to 80,000 input + 32,000 output
+                ),
+                LLMRouterModelConfig(
+                    model_name="anthropic/claude-3-5-sonnet-latest",
+                    litellm_params={"model": "anthropic/claude-3-5-sonnet-latest", "api_key": SettingsManager.get_settings().ANTHROPIC_API_KEY},
+                    rpm=500, # tier 3: can up to 2000
+                    tpm=80000, # tier 3: can up to 160,000 input + 32,000 output
+                ),
+                LLMRouterModelConfig(
+                    model_name="gpt-4.1",
+                    litellm_params={"model": "gpt-4.1", "api_key": SettingsManager.get_settings().OPENAI_API_KEY},
+                    rpm=500, # tier 3: can up to 10000
+                    tpm=80000, # tier 3: can up to 30,000,000
+                ),
+            ],
+            main_model_group="anthropic/claude-sonnet-4-20250514",
+            fallback_model_group=["anthropic/claude-3-7-sonnet-latest", "anthropic/claude-3-5-sonnet-latest"],
+            routing_strategy="simple-shuffle",
+            num_retries=3,
+            retry_delay_seconds=15,
             max_completion_tokens=8192,
-        ),
+        )
     )
     LLMConfigRegistry.register_config(
         "ANTHROPIC_CLAUDE3.7_SONNET",
