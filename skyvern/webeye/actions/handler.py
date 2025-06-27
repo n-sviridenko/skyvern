@@ -470,7 +470,10 @@ async def challenge_with_delayed_stop(page: Page, stop_after_seconds: float = 30
     agent_config = AgentConfig()
     agent = AgentV(page=page, agent_config=agent_config)
     
-    await asyncio.wait_for(agent.robotic_arm.click_checkbox(), timeout=60.0)
+    try:
+        await asyncio.wait_for(agent.robotic_arm.click_checkbox(), timeout=60.0)
+    except Exception as e:
+        LOG.warning(f"Failed to click checkbox, but continuing as captcha may appear: {e}")
     
     # Create a delayed stop function
     async def delayed_stop():
