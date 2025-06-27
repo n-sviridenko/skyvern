@@ -458,6 +458,45 @@ def check_for_invalid_web_action(
     return []
 
 
+async def challenge_with_delayed_stop(page: Page, stop_after_seconds: float = 300.0) -> bool:
+    """Challenge with delayed flag stopping mechanism.
+    
+    Returns:
+        bool: True if challenge was solved successfully, False otherwise
+    """
+    from hcaptcha_challenger.agent import AgentV, AgentConfig
+    from hcaptcha_challenger.models import ChallengeSignal
+    
+    agent_config = AgentConfig()
+    agent = AgentV(page=page, agent_config=agent_config)
+    
+    await asyncio.wait_for(agent.robotic_arm.click_checkbox(), timeout=60.0)
+    
+    # Create a delayed stop function
+    async def delayed_stop():
+        await asyncio.sleep(stop_after_seconds)
+        LOG.info(f"Setting RETRY_ON_FAILURE=False after {stop_after_seconds} seconds")
+        agent.config.RETRY_ON_FAILURE = False
+    
+    # Start the delayed stop task
+    stop_task = asyncio.create_task(delayed_stop())
+    
+    try:
+        # Start the challenge
+        result = await agent.wait_for_challenge()
+        
+        if result == ChallengeSignal.SUCCESS:
+            LOG.info("Challenge completed successfully!")
+            return True
+        else:
+            LOG.error(f"Challenge failed: {result.value}")
+            return False
+    finally:
+        # Always cancel the stop task when done
+        if not stop_task.done():
+            stop_task.cancel()
+
+
 async def handle_solve_captcha_action(
     action: actions.SolveCaptchaAction,
     page: Page,
@@ -465,12 +504,33 @@ async def handle_solve_captcha_action(
     task: Task,
     step: Step,
 ) -> list[ActionResult]:
-    LOG.warning(
-        "Please solve the captcha on the page, you have 30 seconds",
-        action=action,
-    )
-    await asyncio.sleep(30)
-    return [ActionSuccess()]
+    try:
+        LOG.info(
+            "Starting hCAPTCHA challenge solving",
+            action=action,
+            task_id=task.task_id,
+            step_id=step.step_id,
+        )
+        
+        # Call the extracted hCAPTCHA solving logic
+        success = await challenge_with_delayed_stop(page, stop_after_seconds=600.0)
+        
+        # Check if challenge was solved successfully
+        if success:
+            return [ActionSuccess()]
+        else:
+            return [ActionFailure(Exception("Failed to solve captcha"))]
+            
+    except Exception as e:
+        LOG.error(
+            "Error during hCAPTCHA challenge solving",
+            action=action,
+            task_id=task.task_id,
+            step_id=step.step_id,
+            error=str(e),
+            exc_info=True,
+        )
+        return [ActionFailure(Exception("Unknown error when solving captcha"))]
 
 
 async def handle_click_action(

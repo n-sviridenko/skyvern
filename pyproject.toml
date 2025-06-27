@@ -25,7 +25,7 @@ greenlet = [
     {version = ">3.0.3", python = ">=3.12,<3.14"},
     {version = "=3.0.3", python = ">=3.11,<3.12"}
 ]
-pillow = "^10.1.0"
+pillow = ">=11.1.0"
 starlette-context = "^0.3.6"
 ddtrace = "^2.3.2"
 pydantic = "^2.5.2"
@@ -42,7 +42,7 @@ aioboto3 = "^14.3.0"
 asyncache = "^0.3.1"
 orjson = "^3.9.10"
 structlog = "^23.2.0"
-typer = ">=0.9.0,<0.10.0"
+typer = ">=0.15.4"
 types-toml = "^0.10.8.7"
 httpx = {version = ">=0.27.0", extras = ["socks"]}
 filetype = "^1.2.0"
@@ -54,7 +54,7 @@ onnxruntime = [
 aioredlock = "^0.7.3"
 stripe = "^9.7.0"
 tldextract = "^5.1.2"
-websockets = "^12.0"
+websockets = ">=13.0.0,<15.1.0"
 email-validator = "^2.2.0"
 temporalio = "^1.6.0"
 requests-toolbelt = "^1.0.0"
@@ -76,6 +76,7 @@ onepassword-sdk = "0.3.0"
 types-boto3 = {extras = ["full"], version = "^1.38.31"}
 lark = "^1.2.2"
 libcst = "^1.8.2"
+hcaptcha-challenger = "^0.18.9"
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13.2"
@@ -89,7 +90,7 @@ mock = "^5.1.0"
 autoflake = "^2.2.0"
 pydevd-pycharm = "^233.6745.319"
 ipython = "^8.17.2"
-typer = "^0.9.0"
+typer = ">=0.15.4"
 ipykernel = "^6.26.0"
 notebook = "^7.0.6"
 freezegun = "^1.2.2"
